@@ -70,6 +70,7 @@ func main() {
 //func getList()  {
 //
 //}
+
 //获取详情
 func getContent(url string) (Content, error) {
 
