@@ -6,9 +6,9 @@ import (
 )
 
 type PostParams struct {
-	Type   []string
-	Action []string
-	Paged  []string
+	Type   []string //分类
+	Action []string //方法
+	Paged  []string //页码
 }
 
 func PostForms(params PostParams) url.Values {
