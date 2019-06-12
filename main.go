@@ -13,6 +13,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type Content struct {
@@ -20,6 +21,8 @@ type Content struct {
 	href  []string
 	title []string
 }
+
+var wg sync.WaitGroup
 
 func main() {
 
@@ -63,6 +66,9 @@ func main() {
 
 	})
 	downImg(Content)
+	wg.Wait()
+
+	fmt.Print("job success")
 }
 
 func downImg(content Content) {
@@ -72,6 +78,7 @@ func downImg(content Content) {
 		os.Mkdir(config.BASE_DOWN_PATH, os.ModePerm)
 	}
 	for _, img := range content.img {
+		wg.Add(1)
 		go getImg(img)
 	}
 }
@@ -103,6 +110,7 @@ func getImg(url string) (n int64, err error) {
 	defer resp.Body.Close()
 	pix, err := ioutil.ReadAll(resp.Body)
 	n, err = io.Copy(out, bytes.NewReader(pix))
+	wg.Done()
 	return
 
 }
