@@ -21,15 +21,45 @@ type Content struct {
 	title string
 	img   []string
 }
+type Category struct {
+	title string
+	url   string
+	cat   string
+}
 
 var wg sync.WaitGroup
 
+var category Category
+
 func main() {
-	//获取分类
-	getCat()
+	var Category Category
+	var flag = false
+	for !flag {
+		cate, f := getCat(Category)
+		if f {
+			flag = true
+		}
+		category = cate
+	}
+
+	totalPage := getTotalPage(category)
+
+	fmt.Println("开始下载图片...")
+
+	for i := totalPage; i > 0; i-- {
+		getList(category.cat, i)
+	}
+	wg.Wait()
+
+	fmt.Print("job success")
+}
+
+//获取列表
+func getList(category string, page int) {
 	//请求地址
-	//postForms := request.NewPostForms("catL1182", "zrz_load_more_posts", 1)
-	resp, err := http.PostForm(config.ListURL, request.DefaultPostForms())
+	postForms := request.NewPostForms(category, "zrz_load_more_posts", page)
+
+	resp, err := http.PostForm(config.ListURL, postForms)
 
 	if err != nil {
 		panic(err)
@@ -61,17 +91,31 @@ func main() {
 		href, _ := selection.Find(".link-block").Attr("href")
 		list = append(list, href)
 	})
-
 	downImg(list)
-	wg.Wait()
-
-	fmt.Print("job success")
 }
 
-//TODO 获取列表页数据
-//func getList()  {
-//
-//}
+//获取总页数
+func getTotalPage(cate Category) (totalPage int) {
+	resp, err := http.Get(cate.url)
+	defer resp.Body.Close()
+
+	if err != nil {
+		panic(err)
+	}
+
+	dom, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		panic(err)
+
+	}
+	page, exists := dom.Find("page-nav").Attr(":pages")
+	if !exists {
+		panic(err)
+	}
+	totalPage, _ = strconv.Atoi(page)
+	fmt.Println("总页数为：", page)
+	return totalPage
+}
 
 //获取详情
 func getContent(url string) (Content, error) {
@@ -140,7 +184,6 @@ func saveImg(url, dir, name string) (n int64, err error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		wg.Done()
-		return
 	}
 	pix, err := ioutil.ReadAll(resp.Body)
 	n, err = io.Copy(out, bytes.NewReader(pix))
@@ -148,7 +191,7 @@ func saveImg(url, dir, name string) (n int64, err error) {
 	return
 }
 
-func getCat() {
+func getCat(cate Category) (Category, bool) {
 	fmt.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
 	var category = config.GetCategory()
 	for i, c := range category {
@@ -160,14 +203,16 @@ func getCat() {
 	fmt.Print("请选择下载类型:")
 
 	fmt.Scanln(&c)
-	fmt.Println(c)
+
 	cat, ok := category[c]
 
 	if !ok {
-		fmt.Println("")
-		getCat()
+		return cate, false
 	}
 
-	fmt.Println(cat)
-	panic(c)
+	cate.title = cat["title"]
+	cate.url = cat["url"]
+	cate.cat = cat["cat"]
+
+	return cate, true
 }
