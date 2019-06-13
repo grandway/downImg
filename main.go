@@ -184,6 +184,7 @@ func saveImg(url, dir, name string) (n int64, err error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		wg.Done()
+		return
 	}
 	pix, err := ioutil.ReadAll(resp.Body)
 	n, err = io.Copy(out, bytes.NewReader(pix))
