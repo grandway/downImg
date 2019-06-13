@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"imgDown/config"
+	"imgDown/helper"
 	"imgDown/request"
 	"io"
 	"io/ioutil"
@@ -21,14 +22,14 @@ type Content struct {
 	img   []string
 }
 
-//var post_data map[int] string
 var wg sync.WaitGroup
 
 func main() {
-
+	//获取分类
+	getCat()
 	//请求地址
 	//postForms := request.NewPostForms("catL1182", "zrz_load_more_posts", 1)
-	resp, err := http.PostForm(config.BaseURL, request.DefaultPostForms())
+	resp, err := http.PostForm(config.ListURL, request.DefaultPostForms())
 
 	if err != nil {
 		panic(err)
@@ -60,13 +61,14 @@ func main() {
 		href, _ := selection.Find(".link-block").Attr("href")
 		list = append(list, href)
 	})
+
 	downImg(list)
 	wg.Wait()
 
 	fmt.Print("job success")
 }
 
-//todo 获取列表页数据
+//TODO 获取列表页数据
 //func getList()  {
 //
 //}
@@ -102,7 +104,7 @@ func getContent(url string) (Content, error) {
 //下载图片
 func downImg(list []string) {
 
-	exist, _ := PathExists(config.BaseDownPath)
+	exist, _ := helper.PathExists(config.BaseDownPath)
 	if !exist {
 		os.Mkdir(config.BaseDownPath, os.ModePerm)
 	}
@@ -120,24 +122,12 @@ func downImg(list []string) {
 
 }
 
-//文件夹是否存在
-func PathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
-
 //下载图片
 func saveImg(url, dir, name string) (n int64, err error) {
 
 	path := config.BaseDownPath + "/" + dir
 
-	exist, _ := PathExists(path)
+	exist, _ := helper.PathExists(path)
 	if !exist {
 		os.Mkdir(path, os.ModePerm)
 	}
@@ -148,9 +138,35 @@ func saveImg(url, dir, name string) (n int64, err error) {
 	defer out.Close()
 	resp, err := http.Get(url)
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		wg.Done()
+		return
+	}
 	pix, err := ioutil.ReadAll(resp.Body)
 	n, err = io.Copy(out, bytes.NewReader(pix))
 	wg.Done()
 	return
+}
 
+func getCat() {
+	fmt.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+	var category = config.GetCategory()
+	for _, c := range category {
+		fmt.Println("1.", c["title"])
+	}
+	fmt.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+
+	var c int
+	fmt.Print("请选择下载类型:")
+
+	fmt.Scanln(&c)
+	cat, ok := category[c]
+
+	if !ok {
+		fmt.Println("")
+		getCat()
+	}
+
+	fmt.Println(cat)
+	panic(c)
 }
