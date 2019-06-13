@@ -151,8 +151,8 @@ func saveImg(url, dir, name string) (n int64, err error) {
 func getCat() {
 	fmt.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
 	var category = config.GetCategory()
-	for _, c := range category {
-		fmt.Println("1.", c["title"])
+	for i, c := range category {
+		fmt.Println(i, ".", c["title"])
 	}
 	fmt.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
 
@@ -160,6 +160,7 @@ func getCat() {
 	fmt.Print("请选择下载类型:")
 
 	fmt.Scanln(&c)
+	fmt.Println(c)
 	cat, ok := category[c]
 
 	if !ok {
