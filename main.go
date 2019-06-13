@@ -44,14 +44,14 @@ func main() {
 
 	totalPage := getTotalPage(category)
 
-	fmt.Println("开始下载图片...")
+	fmt.Println(category.title, "开始下载...")
 
 	for i := totalPage; i > 0; i-- {
 		getList(category.cat, i)
 	}
 	wg.Wait()
 
-	fmt.Print("job success")
+	fmt.Println("job success")
 }
 
 //获取列表
