@@ -178,14 +178,15 @@ func saveImg(url, dir, name string) (n int64, err error) {
 
 	downPath := path + "/" + name + ".jpg"
 	fmt.Println(downPath)
-	out, err := os.Create(downPath)
-	defer out.Close()
+
 	resp, err := http.Get(url)
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		wg.Done()
 		return
 	}
+	out, err := os.Create(downPath)
+	defer out.Close()
 	pix, err := ioutil.ReadAll(resp.Body)
 	n, err = io.Copy(out, bytes.NewReader(pix))
 	wg.Done()
