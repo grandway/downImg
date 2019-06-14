@@ -91,6 +91,9 @@ func getList(category string, page int) {
 		href, _ := selection.Find(".link-block").Attr("href")
 		list = append(list, href)
 	})
+	if list[0] == "" {
+		return
+	}
 	downImg(list)
 }
 
