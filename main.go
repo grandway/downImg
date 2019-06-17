@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/satori/go.uuid"
 	"imgDown/config"
 	"imgDown/helper"
 	"imgDown/request"
@@ -140,7 +141,7 @@ func getContent(url string) (Content, error) {
 
 	dom.Find("#entry-content img").Each(func(i int, selection *goquery.Selection) {
 		img, exist := selection.Attr("src")
-		if !exist {
+		if !exist || (len(img) < len(config.BaseURL)) {
 			return
 		}
 		content.img = append(content.img, img)
@@ -156,15 +157,24 @@ func downImg(list []string) {
 		os.Mkdir(config.BaseDownPath, os.ModePerm)
 	}
 	for _, url := range list {
-		content, err := getContent(url)
 
-		if err != nil {
-			continue
-		}
-		for key, img := range content.img {
-			wg.Add(1)
-			go saveImg(img, content.title, strconv.Itoa(key))
-		}
+		wg.Add(1)
+		go func(url string) {
+			content, err := getContent(url)
+			if err == nil {
+				path := config.BaseDownPath + "/" + content.title
+				exist, _ := helper.PathExists(path)
+				if !exist {
+					os.Mkdir(path, os.ModePerm)
+				}
+				for _, img := range content.img {
+					wg.Add(1)
+					go saveImg(img, path, uuid.NewV4().String())
+				}
+			}
+			wg.Done()
+		}(url)
+
 	}
 
 }
@@ -172,26 +182,17 @@ func downImg(list []string) {
 //下载图片
 func saveImg(url, dir, name string) (n int64, err error) {
 
-	path := config.BaseDownPath + "/" + dir
-
-	exist, _ := helper.PathExists(path)
-	if !exist {
-		os.Mkdir(path, os.ModePerm)
-	}
-
-	downPath := path + "/" + name + ".jpg"
+	downPath := dir + "/" + name + ".jpg"
 	fmt.Println(downPath)
 
 	resp, err := http.Get(url)
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		wg.Done()
-		return
+	if resp.StatusCode == 200 {
+		out, _ := os.Create(downPath)
+		defer out.Close()
+		pix, _ := ioutil.ReadAll(resp.Body)
+		n, err = io.Copy(out, bytes.NewReader(pix))
 	}
-	out, err := os.Create(downPath)
-	defer out.Close()
-	pix, err := ioutil.ReadAll(resp.Body)
-	n, err = io.Copy(out, bytes.NewReader(pix))
 	wg.Done()
 	return
 }
