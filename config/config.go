@@ -1,6 +1,6 @@
 package config
 
-const BaseDownPath string = "E:/images"
+const BaseDownPath string = "./images"
 
 const BaseURL string = "https://www.jdlingyu.mobi"
 const ListURL string = "https://www.jdlingyu.mobi/wp-admin/admin-ajax.php"
